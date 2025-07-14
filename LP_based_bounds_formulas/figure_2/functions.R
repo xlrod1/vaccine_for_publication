@@ -96,15 +96,23 @@ compute_bounds <- function(target_param, B, opt = "max", constraint = NULL) {
   if (!is.null(constraint)) {
     indices_to_zero <- NULL
     
-    if (constraint == "negative_a") {
-      indices_to_zero <- if (m == 0) c(3,8,10,14) else c(4,9,10,14)
-    } else if (constraint == "positive_a") {
-      indices_to_zero <- if (m == 0) c(1,5,7,12) else c(2,5,8,11)
-    } else if (constraint == "negative_m") {
-      indices_to_zero <- if (a == 0) c(2,8,9,14) else c(4,7,9,12)
-    } else if (constraint == "positive_m") {
-      indices_to_zero <- if (a == 0) c(1,6,7,13) else c(3,6,8,11)
-    }
+   if (constraint == "positive_a") {
+    # Non-negative effect of A: Y^{a=0,m} ≤ Y^{a=1,m} for all m
+    # Set q_{1.ab}, q_{2.ab}, q_{5.ab}, q_{7.ab}, q_{8.ab}, q_{11.ab}, q_{12.ab} = 0
+    indices_to_zero <- c(1, 2, 5, 7, 8, 11, 12)
+  } else if (constraint == "negative_a") {
+    # Non-positive effect of A: Y^{a=1,m} ≤ Y^{a=0,m} for all m
+    # Set q_{3.ab}, q_{4.ab}, q_{7.ab}, q_{8.ab}, q_{10.ab}, q_{13.ab}, q_{14.ab} = 0
+    indices_to_zero <- c(3, 4, 7, 8, 10, 13, 14)
+  } else if (constraint == "positive_m") {
+    # Non-negative effect of m: Y^{a,m=0} ≤ Y^{a,m=1} for all a
+    # Set q_{1.ab}, q_{3.ab}, q_{6.ab}, q_{7.ab}, q_{8.ab}, q_{11.ab}, q_{13.ab} = 0
+    indices_to_zero <- c(1, 3, 6, 7, 8, 11, 13)
+  } else if (constraint == "negative_m") {
+    # Non-positive effect of m: Y^{a,m=1} ≤ Y^{a,m=0} for all a
+    # Set q_{2.ab}, q_{4.ab}, q_{7.ab}, q_{8.ab}, q_{9.ab}, q_{12.ab}, q_{14.ab} = 0
+    indices_to_zero <- c(2, 4, 7, 8, 9, 12, 14)
+  }
     
     if (!is.null(indices_to_zero)) {
       A_l <- rbind(A_l, diag(n)[indices_to_zero, , drop = FALSE])

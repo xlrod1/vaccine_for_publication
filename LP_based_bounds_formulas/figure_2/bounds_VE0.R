@@ -1,5 +1,5 @@
 #Upload all functions
-source("G:\\My Drive\\PhD3\\vaccine_for_publications\\LP_based_bounds_formulas\\figure_2\\functions.R")
+source("figure 2 functions path.R")
 
 # VE(0)
 compute_bounds("Y_10",B =  0,"min",constraint = NULL)

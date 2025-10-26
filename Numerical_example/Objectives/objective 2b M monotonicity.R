@@ -3,7 +3,7 @@ library(ggplot2)
 
 set.seed(12345)
 
-folder_path <- "G:/My Drive/PhD3/data_example/code/functions"
+folder_path <- "yours function path"
 # List all R files in the folder
 r_files <- list.files(path = folder_path, pattern = "\\.R$", full.names = TRUE)
 # Source each file
@@ -69,8 +69,8 @@ all_bounds <- list()
 
 # Define beta_S values
 # Fixed parameters
-gamma_M0_fixed <- 1.5
-gamma_M1_vals <- c(1.5, 0, -1.5, -3)  # specific values only
+gamma_M0_fixed <- log(1.5)
+gamma_M1_vals <- c(log(1.5), 0, -log(1.5),-log(3),-log(5))  # specific values only
 # Loop over beta_S values
 for (gamma_M1 in gamma_M1_vals) {
   df <- simulate_data_PO(1000000,gamma_M_0=gamma_M0_fixed ,gamma_M_1=gamma_M1)
@@ -81,7 +81,7 @@ for (gamma_M1 in gamma_M1_vals) {
   VE_T <- 1 - mean(df$Y_11) / mean(df$Y_00)
   
   # Bounds from both methods
-  mon_no_s <- compute_monotonicity_bounds_no_S(df)
+  mon_no_s <- compute_monotonicity_bounds_no_S(df,monotonicity_constraint = "positive_M")
   LP_M_no_S <- get_all_LP_bounds_summary_no_s(df, monotonicity_constraint = "positive_M")
   
   # Combine bounds into long-format data
@@ -109,31 +109,98 @@ for (gamma_M1 in gamma_M1_vals) {
 
 # Combine all into one dataframe
 plot_df <- bind_rows(all_bounds)
-
-
+plot_df<-plot_df %>% filter(Lower<Upper)
 
 # Treat beta_S as a categorical variable with the correct order
-plot_df <- plot_df %>%
-  mutate(beta_S = factor(gamma_M1, levels = c( -3,-1.5,0,1.5)))
+pos    <- position_dodge(width = 0.6)
+cap_hw <- 0.12
+tol    <- 1e-8
 
-# Plot: one panel per Method, grouped by VE_type and beta_S (categorical x-axis)
-ggplot(plot_df, aes(x =as.factor(gamma_M1), group = VE_type)) +
-  geom_errorbar(aes(ymin = Lower, ymax = Upper),
-                width = 0.2, position = position_dodge(width = 0.5)) +
-  geom_point(aes(y = True),
-             size =1, position = position_dodge(width = 0.5)) +
-  facet_grid(VE_type~ Method,scales = "free_y") +
-  labs(
-    #title = "True VE and Bounds by Method and beta_S",
-       x =expression(gamma[M==1]),
-       y = "Vaccine Efficacy (VE)") +
- # scale_color_manual(values = c("VE0" = "#1b9e77", "VE1" = "#d95f02", "VEt" = "#7570b3")) +
+
+# helper to map numeric gamma_M1 to math-label strings
+make_gamma_label <- function(v, tol = 1e-8) {
+  
+  if (abs(v - (-log(5)))   < tol) return("-log(5)")
+  if (abs(v - (-log(3)))   < tol) return("-log(3)")
+  if (abs(v - (-log(1.5))) < tol) return("-log(1.5)")
+  if (abs(v) < tol) return("0")
+  if (abs(v -  log(1.5)) < tol) return("log(1.5)")
+  
+
+  # fallback: plain number
+  format(v, digits = 3, trim = TRUE, scientific = FALSE)
+}
+
+
+# ----- Prep data -----
+plot_df2 <- plot_df %>%
+  mutate(
+    Lower100 = Lower * 100,
+    Upper100 = Upper * 100,
+    True100  = True  * 100,
+    VE_facet = factor(
+      VE_type,
+      levels = c("VE0","VE1","VE_T","VEt"),
+      labels = c("VE(0)","VE(1)","VE[T]","VE[T]")
+    ),
+    gamma_lab = sapply(gamma_M1, make_gamma_label)
+  )
+desired_order <- c("-log(5)", "-log(3)", "-log(1.5)", "0", "log(1.5)")
+plot_df2 <- plot_df2 %>% mutate(gamma_lab = factor(gamma_lab, levels = desired_order))
+
+df_ok   <- plot_df2 %>% filter(Lower100 >= 0)
+df_clip <- plot_df2 %>% filter(Lower100 < 0)
+
+# arrows at 0 (per method)
+arrows_below <- df_clip %>% mutate(y_start = 2, y_end = 0)
+#   mutate(y_start = 2, y_end = 0)
+
+df_true <- plot_df2 %>% distinct(VE_facet, gamma_lab, True100)
+
+cap_w <- 0.28                       # cap width
+
+# ----- Plot -----
+ggplot(plot_df2, aes(x = gamma_lab, group = VE_type,type=Method)) +
+  # regular intervals (both caps)
+  geom_errorbar(
+    data = df_ok,
+    aes(ymin = pmax(Lower100, 0), ymax = pmin(Upper100, 100)),
+    width = 0.24, position = pos
+  ) +
+  # vertical line for Lower < 0: from 0 up to upper
+  geom_segment(
+    data = df_clip,
+    aes(x = gamma_lab, xend = gamma_lab, y = 0, yend = pmin(Upper100, 100)),
+    position = pos
+  ) +
+  # top cap at the upper end (ymin==ymax)
+  geom_errorbar(
+    data = df_clip,
+    aes(ymin = pmin(Upper100, 100), ymax = pmin(Upper100, 100)),
+    width = 0.24, position = pos
+  ) +
+  # down arrow at 0
+  geom_segment(
+    data = arrows_below,
+    aes(x = gamma_lab, xend = gamma_lab, y = y_start, yend = y_end),
+    position = pos,
+    arrow = arrow(length = unit(3, "pt"), ends = "last", type = "closed")
+  ) +
+  # true value
+  geom_point(aes(y = True100), size = 1.3, position = pos) +
+  facet_grid(VE_facet ~ Method, labeller = label_parsed) +
+  labs(x = expression(gamma[B^1]), y = "True VE and estimated bounds (%)") +
+  scale_x_discrete(labels = function(x) parse(text = x), drop = FALSE) +
+  coord_cartesian(ylim = c(0, 100), expand = FALSE) +
   theme_minimal() +
   theme(strip.text = element_text(size = 12),
-        axis.text.x = element_text(angle = 0, hjust = 0.5))
+        axis.text.x = element_text(hjust = 0.5))
 
 
-ggsave("G:\\My Drive\\PhD3\\data_example\\Figures\\ve_bounds_plot_M_mon_effect.pdf", width = 6.5, height = 3, units = "in")
+
+
+
+
 
 
 

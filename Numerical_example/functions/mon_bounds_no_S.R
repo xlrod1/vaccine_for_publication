@@ -1,4 +1,4 @@
-compute_monotonicity_bounds_no_S <- function(df) {
+compute_monotonicity_bounds_no_S <- function(df,monotonicity_constraint ="NO") {
   # Define basic probabilities
   p_110 <- mean(df$Y == 1 & df$A == 1 & df$B == 0) / mean(df$A == 1 & df$B == 0)
   p_111 <- mean(df$Y == 1 & df$A == 1 & df$B == 1) / mean(df$A == 1 & df$B == 1)
@@ -9,17 +9,38 @@ compute_monotonicity_bounds_no_S <- function(df) {
   p_11 <- mean(df$Y == 1 & df$A == 1) / mean(df$A == 1)
   p_10 <- mean(df$Y == 1 & df$A == 0) / mean(df$A == 0)
   
-  # VE(0)
-  ve0_lower <- 1 - p_11 / max(p_001, 1e-6)
-  ve0_upper <- 1 - p_110 / max(p_10, 1e-6)
   
-  # VE(1)
-  ve1_lower <- 1 - p_111 / max(p_10, 1e-6)
-  ve1_upper <- 1 - p_11 / max(p_011, 1e-6)
+  if(monotonicity_constraint=="positive_M"){
+    # VE(0)
+    ve0_lower <- 1 - p_11 / max(p_001, 1e-6)
+    ve0_upper <- 1 - p_110 / max(p_10, 1e-6)
+    
+    # VE(1)
+    ve1_lower <- 1 - p_111 / max(p_10, 1e-6)
+    ve1_upper <- 1 - p_11 / max(p_011, 1e-6)
+    
+    # VEt
+    vet_lower <- 1 - p_111 / max(p_001, 1e-6)
+    vet_upper <- 1 - p_11 / max(p_10, 1e-6)
+    
+    
+  }else{
+    # VE(0)
+    ve0_lower <- 1 - 1 / max(p_001, 1e-6)
+    ve0_upper <- 1 - p_110 
+    
+    # VE(1)
+    ve1_lower <- -10^6
+    ve1_upper <- 1 
+    
+    # VEt
+    vet_lower <- 1 - p_111 / max(p_001, 1e-6)
+    vet_upper <- 1 
+  }
   
-  # VEt
-  vet_lower <- 1 - p_111 / max(p_001, 1e-6)
-  vet_upper <- 1 - p_11 / max(p_10, 1e-6)
+  
+  
+  
   
   bounds_df <- data.frame(
     VE0_lower = ve0_lower,

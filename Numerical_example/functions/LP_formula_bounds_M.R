@@ -17,19 +17,19 @@ compute_expectations_no_s <- function(df) {
 }
 
 
-compute_LP_formula_bounds_no_S <- function(df, monotonicity_constraint = NULL) {
+compute_LP_formula_bounds_no_S <- function(df, monotonicity_constraint = "NO") {
   bounds_list <- list()
   probs <- compute_probabilities_no_s(df)
   exps <- compute_expectations_no_s(df)
   
-  if(is.null(monotonicity_constraint)){
+  if(monotonicity_constraint=="NO"){
     #VE0
     ve0_upper <- 1 - (probs$p_01 * exps$EY_10+probs$p_11 * 0)/ (probs$p_00 * exps$EY_00+probs$p_10*1)
     ve0_lower <- 1 - (probs$p_01 * exps$EY_10 + probs$p_11 * 1)/( probs$p_00 * exps$EY_00 + probs$p_10 * 0)
     
     # VE1
     ve1_upper<- 1 -(probs$p_01 * 0 + probs$p_11 * exps$EY_11)/(probs$p_00 *1 + probs$p_10 * exps$EY_01)
-    ve1_lower<- 1 - probs$p_01 * 1 + probs$p_11 * exps$EY_11/(probs$p_00 *0 + probs$p_10 * exps$EY_01)
+    ve1_lower<- 1 - (probs$p_01 * 1 + probs$p_11 * exps$EY_11)/(probs$p_00 *0 + probs$p_10 * exps$EY_01)
     
     # VEt
     vet_upper <- 1 - (probs$p_01 *0 + probs$p_11 * exps$EY_11) / (probs$p_00 * exps$EY_00 + probs$p_10 * 1)

@@ -1,7 +1,7 @@
 set.seed(2025)
 
 #Source function
-folder_path <- "G:\\My Drive\\PhD3\\vaccine_for_publications\\Non_linear_optimazation\\functions"
+folder_path <- "Non_linear_optimazation\\functions"
 # List all R files in the folder
 r_files <- list.files(path = folder_path, pattern = "\\.R$", full.names = TRUE)
 # Source each file

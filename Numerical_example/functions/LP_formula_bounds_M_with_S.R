@@ -1,4 +1,4 @@
-compute_LP_formula_bounds_with_S<- function(df, monotonicity_constraint = NULL) {
+compute_LP_formula_bounds_with_S<- function(df, monotonicity_constraint = "NO") {
   
   get_pe <- function(df_s) {
     p_01 <- sum(df_s$A == 1 & df_s$B == 0) / sum(df_s$A == 1)
@@ -17,7 +17,7 @@ compute_LP_formula_bounds_with_S<- function(df, monotonicity_constraint = NULL) 
   
   nums_denoms <- lapply(pe_list, function(pe) {
     with(pe, {
-      if (is.null(monotonicity_constraint)) {
+      if (monotonicity_constraint=="NO") {
         
       
         # --- NO monotonicity ---

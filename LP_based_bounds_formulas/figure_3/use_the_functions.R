@@ -1,4 +1,4 @@
-#library(causaloptim)
+
 library(rcdd)
 source("G:/My Drive/PhD3/bounds/bounds.DAG2d/new.R")
 source("G:/My Drive/PhD3/bounds/bounds.DAG2d/fun.compute.bounds.R")
